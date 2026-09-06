@@ -17,3 +17,22 @@ jobs:
       - run: npm test
       # Dogfood: the audit tool has to pass its own audit.
       - run: node src/cli.mjs . --min-score 90 --format markdown >> "$GITHUB_STEP_SUMMARY"
+
+  # Dogfood the published Action the way a customer would consume it, so a
+  # broken action.yml fails here rather than in someone else's CI.
+  action:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - id: audit
+        uses: ./
+        with:
+          min-score: 90
+      - run: |
+          echo "score=${{ steps.audit.outputs.score }} grade=${{ steps.audit.outputs.grade }}"
+          test -n "${{ steps.audit.outputs.score }}"
+          git diff --exit-code --stat
+        shell: bash
