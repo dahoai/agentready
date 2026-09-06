@@ -31,9 +31,13 @@ runs:
       shell: bash
       run: |
         set -euo pipefail
-        node "${{ github.action_path }}/src/cli.mjs" "${{ inputs.path }}" --format json --out agentready.json
-        score=$(node -e 'console.log(JSON.parse(require("fs").readFileSync("agentready.json","utf8")).score)')
-        grade=$(node -e 'console.log(JSON.parse(require("fs").readFileSync("agentready.json","utf8")).grade)')
+        # Report goes to the runner temp dir, not the workspace: leaving a stray
+        # agentready.json in a checked-out repo breaks any later step that
+        # asserts a clean working tree.
+        report="${RUNNER_TEMP:-/tmp}/agentready.json"
+        node "${{ github.action_path }}/src/cli.mjs" "${{ inputs.path }}" --format json --out "$report"
+        score=$(node -e 'console.log(JSON.parse(require("fs").readFileSync(process.argv[1],"utf8")).score)' "$report")
+        grade=$(node -e 'console.log(JSON.parse(require("fs").readFileSync(process.argv[1],"utf8")).grade)' "$report")
         echo "score=$score" >> "$GITHUB_OUTPUT"
         echo "grade=$grade" >> "$GITHUB_OUTPUT"
 
