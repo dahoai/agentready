@@ -8,14 +8,45 @@
 // every agent PR unverifiable; a missing CODEOWNERS is a nice-to-have.
 
 const pass = (detail) => ({ status: "pass", detail });
+const na = (detail) => ({ status: "na", detail });
 const warn = (detail, fix) => ({ status: "warn", detail, fix });
 const fail = (detail, fix) => ({ status: "fail", detail, fix });
 
 const INSTRUCTION_FILES = ["AGENTS.md", "CLAUDE.md", ".cursorrules", ".github/copilot-instructions.md"];
 const TEST_HINT = /\b(test|spec|pytest|vitest|jest|go test|cargo test)\b/i;
 
-function instructionFile(ctx) {
-  return INSTRUCTION_FILES.find((f) => ctx.has(f)) ?? null;
+// A repo often carries several of these at once (AGENTS.md plus CLAUDE.md is
+// common) and the commands may live in any of them. Checking only the first
+// reported a repo as having no test command when its CLAUDE.md named it five
+// times, so every check reads all of them.
+function instructionFiles(ctx) {
+  return INSTRUCTION_FILES.filter((f) => ctx.has(f));
+}
+
+// Documentation, prompt, and skills repositories are not software, and the
+// code-quality checks below do not apply to them — reporting "no tests" on a
+// pile of markdown buries the findings that do matter.
+//
+// The signal is the ratio, not a file count: a focused five-file library is a
+// codebase, while a repo with 2 source files and 319 markdown files is not.
+// Requiring markdown to both dominate and clear a floor keeps small real
+// codebases (which have a README and little else) on the code path.
+function markdownCount(ctx) {
+  return ctx.findAll(/\.mdx?$/i).length;
+}
+
+function isContentRepo(ctx) {
+  // No source files at all is the unambiguous case, and it has to come first:
+  // a real marketplace repo had zero source files and one markdown file,
+  // so the ratio rule below (which needs 5 markdown files) let it through and
+  // graded a repo with no code on whether it had tests.
+  if (ctx.sourceFiles.length === 0) return true;
+  const markdown = markdownCount(ctx);
+  return markdown >= 5 && markdown >= 3 * ctx.sourceFiles.length;
+}
+
+function contentRepoNote(ctx) {
+  return `Not applicable: ${markdownCount(ctx)} markdown files against ${ctx.sourceFiles.length} source file(s), so this is a documentation repository rather than software.`;
 }
 
 function scriptNames(ctx) {
@@ -28,21 +59,22 @@ export const CHECKS = [
     title: "Agent instructions file",
     weight: 3,
     run(ctx) {
-      const file = instructionFile(ctx);
-      if (!file) {
+      const files = instructionFiles(ctx);
+      if (!files.length) {
         return fail(
           "No AGENTS.md, CLAUDE.md, or equivalent. Every agent starts from zero and guesses your conventions.",
           "agentready init",
         );
       }
-      const text = ctx.read(file) ?? "";
-      if (text.trim().length < 400) {
+      const sized = files.map((f) => [f, (ctx.read(f) ?? "").trim().length]).sort((a, b) => b[1] - a[1]);
+      const [best, length] = sized[0];
+      if (length < 400) {
         return warn(
-          `${file} exists but is ${text.trim().length} characters — too thin to change agent behaviour.`,
+          `${best} exists but is ${length} characters — too thin to change agent behaviour.`,
           "Document the build/test commands, the module layout, and the conventions you actually enforce in review.",
         );
       }
-      return pass(`${file} (${text.trim().length} characters)`);
+      return pass(`${best} (${length} characters)`);
     },
   },
   {
@@ -50,22 +82,25 @@ export const CHECKS = [
     title: "Instructions name the build and test commands",
     weight: 3,
     run(ctx) {
-      const file = instructionFile(ctx);
-      if (!file) return fail("No instructions file to check.", "agentready init");
-      const text = ctx.read(file) ?? "";
-      if (!TEST_HINT.test(text)) {
+      const files = instructionFiles(ctx);
+      if (!files.length) return fail("No instructions file to check.", "agentready init");
+      if (isContentRepo(ctx)) return na(contentRepoNote(ctx));
+
+      const named = files.filter((f) => TEST_HINT.test(ctx.read(f) ?? ""));
+      if (!named.length) {
         return fail(
-          `${file} never names a test command, so an agent cannot verify its own work before opening a PR.`,
+          `${files.join(" and ")} never name a test command, so an agent cannot verify its own work before opening a PR.`,
           "Add a 'Commands' section with the exact test, lint, and typecheck invocations.",
         );
       }
-      if (!/```/.test(text)) {
+      const fenced = named.find((f) => /```/.test(ctx.read(f) ?? ""));
+      if (!fenced) {
         return warn(
-          `${file} mentions testing but has no fenced command block — agents copy commands verbatim from code fences.`,
+          `${named.join(" and ")} mention testing but have no fenced command block — agents copy commands verbatim from code fences.`,
           "Put each command in a fenced code block.",
         );
       }
-      return pass(`${file} names a test command in a code block`);
+      return pass(`${fenced} names a test command in a code block`);
     },
   },
   {
@@ -73,6 +108,7 @@ export const CHECKS = [
     title: "Runnable test command",
     weight: 3,
     run(ctx) {
+      if (isContentRepo(ctx)) return na(contentRepoNote(ctx));
       if (scriptNames(ctx).includes("test")) return pass("package.json scripts.test");
       const makefile = ctx.read("Makefile");
       if (makefile && /^test:/m.test(makefile)) return pass("Makefile test target");
@@ -90,6 +126,7 @@ export const CHECKS = [
     title: "Tests exist",
     weight: 2,
     run(ctx) {
+      if (isContentRepo(ctx)) return na(contentRepoNote(ctx));
       const tests = ctx.findAll(/(^|\/)(tests?|__tests__|spec)\/|\.(test|spec)\.[a-z]+$|(^|\/)test_[^/]+\.py$/i);
       if (!tests.length) {
         return fail(
@@ -106,6 +143,7 @@ export const CHECKS = [
     title: "CI runs the tests",
     weight: 3,
     run(ctx) {
+      if (isContentRepo(ctx)) return na(contentRepoNote(ctx));
       const workflows = ctx.findAll(/^\.github\/workflows\/.+\.ya?ml$/);
       const other = ctx.find(/^(\.gitlab-ci\.yml|\.circleci\/config\.yml|azure-pipelines\.yml)$/);
       if (!workflows.length && !other) {
@@ -129,6 +167,7 @@ export const CHECKS = [
     title: "Formatter config",
     weight: 2,
     run(ctx) {
+      if (isContentRepo(ctx)) return na(contentRepoNote(ctx));
       const config = ctx.find(/^(\.prettierrc|\.prettierrc\.(json|ya?ml|js|cjs|mjs)|prettier\.config\.[cm]?js|biome\.jsonc?|\.editorconfig|rustfmt\.toml|\.clang-format)$/);
       if (config) return pass(config);
       const py = ctx.read("pyproject.toml") ?? "";
@@ -145,6 +184,7 @@ export const CHECKS = [
     title: "Linter config",
     weight: 2,
     run(ctx) {
+      if (isContentRepo(ctx)) return na(contentRepoNote(ctx));
       const config = ctx.find(/^(eslint\.config\.[cm]?js|\.eslintrc(\.(json|ya?ml|js|cjs))?|biome\.jsonc?|\.flake8|\.golangci\.ya?ml|clippy\.toml)$/);
       if (config) return pass(config);
       const py = ctx.read("pyproject.toml") ?? "";
@@ -160,6 +200,7 @@ export const CHECKS = [
     title: "Type checking",
     weight: 2,
     run(ctx) {
+      if (isContentRepo(ctx)) return na(contentRepoNote(ctx));
       // A monorepo often has no root tsconfig, only per-package ones. Judge the
       // root when there is one; otherwise judge every tsconfig we can find,
       // rather than reporting a repo with 73 TypeScript files as untyped.

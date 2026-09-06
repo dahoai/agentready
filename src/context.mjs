@@ -44,6 +44,9 @@ function listFiles(root) {
   return { files: walk(root, root, []), source: "walk" };
 }
 
+const SOURCE_EXT = /\.(ts|tsx|js|jsx|mjs|cjs|py|go|rs|rb|java|kt|swift|php|cs|c|cc|cpp|h|hpp|scala|ex|exs)$/i;
+const NON_SOURCE_PATH = /(^|\/)(node_modules|dist|build|out|vendor|\.next|coverage)\//;
+
 export function buildContext(root) {
   const { files, source } = listFiles(root);
   const fileSet = new Set(files);
@@ -100,6 +103,10 @@ export function buildContext(root) {
     files,
     source,
     waived,
+    // Tracked, hand-written source files. Used to tell a codebase apart from a
+    // documentation or prompt repository, where the code-quality checks do not
+    // apply at all.
+    sourceFiles: files.filter((f) => SOURCE_EXT.test(f) && !NON_SOURCE_PATH.test(f)),
     pkg,
     read,
     size,

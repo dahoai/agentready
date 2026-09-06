@@ -4,8 +4,8 @@
 // counted as passes — a team that opts out of a check should not be rewarded
 // for it, and inflating the number would make the grade meaningless.
 const VALUE = { pass: 1, warn: 0.5, fail: 0 };
-const MARK = { pass: "PASS", warn: "WARN", fail: "FAIL", waived: "WAIV" };
-const COLOR = { pass: "\x1b[32m", warn: "\x1b[33m", fail: "\x1b[31m", waived: "\x1b[90m" };
+const MARK = { pass: "PASS", warn: "WARN", fail: "FAIL", waived: "WAIV", na: "N/A " };
+const COLOR = { pass: "\x1b[32m", warn: "\x1b[33m", fail: "\x1b[31m", waived: "\x1b[90m", na: "\x1b[90m" };
 const RESET = "\x1b[0m";
 
 export function score(results) {
@@ -44,10 +44,13 @@ export function renderTerminal(results, { color = true } = {}) {
   }
 
   const count = (status) => results.filter((r) => r.status === status).length;
-  const waived = count("waived");
+  const tail = [
+    count("waived") ? `${count("waived")} waived` : null,
+    count("na") ? `${count("na")} not applicable` : null,
+  ].filter(Boolean);
   lines.push(
     "",
-    `  ${count("fail")} failing, ${count("warn")} warning, ${count("pass")} passing` + (waived ? `, ${waived} waived` : ""),
+    `  ${count("fail")} failing, ${count("warn")} warning, ${count("pass")} passing` + (tail.length ? `, ${tail.join(", ")}` : ""),
     "",
   );
   return lines.join("\n");
@@ -56,7 +59,7 @@ export function renderTerminal(results, { color = true } = {}) {
 export function renderMarkdown(results, { repo = "this repository" } = {}) {
   const value = score(results);
   const letter = grade(value);
-  const icon = { pass: "✅", warn: "⚠️", fail: "❌", waived: "➖" };
+  const icon = { pass: "✅", warn: "⚠️", fail: "❌", waived: "➖", na: "➖" };
   const lines = [
     `# Agent readiness: ${value}/100 (${letter})`,
     "",
@@ -74,7 +77,7 @@ export function renderMarkdown(results, { repo = "this repository" } = {}) {
   const actionable = results.filter((r) => r.fix);
   if (actionable.length) {
     lines.push("", "## What to fix, in order", "");
-    const order = { fail: 0, warn: 1, pass: 2, waived: 3 };
+    const order = { fail: 0, warn: 1, pass: 2, waived: 3, na: 4 };
     for (const r of [...actionable].sort((a, b) => order[a.status] - order[b.status] || b.weight - a.weight)) {
       lines.push(`- **${r.title}** — ${r.fix}`);
     }
