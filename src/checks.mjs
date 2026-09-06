@@ -46,7 +46,14 @@ function isContentRepo(ctx) {
 }
 
 function contentRepoNote(ctx) {
-  return `Not applicable: ${markdownCount(ctx)} markdown files against ${ctx.sourceFiles.length} source file(s), so this is a documentation repository rather than software.`;
+  // Zero source files and zero markdown is an empty directory, not a
+  // documentation repository. Usually it means someone ran this one level up
+  // from the repo they meant, so say that instead of explaining a ratio.
+  const markdown = markdownCount(ctx);
+  if (markdown === 0 && ctx.sourceFiles.length === 0) {
+    return "Not applicable: no source files and no documentation found here — check that this is the directory you meant.";
+  }
+  return `Not applicable: ${markdown} markdown files against ${ctx.sourceFiles.length} source file(s), so this is a documentation repository rather than software.`;
 }
 
 function scriptNames(ctx) {

@@ -1,6 +1,6 @@
 {
   "name": "@dahoai/agentready",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Audit a repository for AI-coding-agent readiness, then fix what's missing.",
   "type": "module",
   "license": "MIT",

@@ -104,6 +104,16 @@ test("a repo with no source files at all is never judged as code", () => {
   assert.equal(runCheck("ci-runs-tests", empty).status, "na");
 });
 
+test("an empty directory is not described as a documentation repository", () => {
+  // Zero markdown against zero source is an empty folder, and the ratio
+  // explanation reads as nonsense there. Someone running this one level up
+  // from their repo sees this sentence first.
+  const nothing = runCheck("test-command", { ".gitkeep": "" });
+  assert.equal(nothing.status, "na");
+  assert.doesNotMatch(nothing.detail, /documentation repository/);
+  assert.match(nothing.detail, /directory you meant/);
+});
+
 test("a small codebase with a README is still judged as code", () => {
   // The ratio guard must not mistake a focused library for documentation.
   const lib = { "README.md": "# lib", "src/a.js": "", "src/b.js": "", "package.json": "{}" };
