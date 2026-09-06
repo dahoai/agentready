@@ -2,6 +2,8 @@
 
 Audit a repository for AI-coding-agent readiness, then scaffold what is missing.
 
+This audits a git repository, not a website. If you want `llms.txt` and `/.well-known` checks — whether an agent can use your *product* — that is a different problem, and several similarly named tools solve it.
+
 Teams buy Claude Code and Cursor seats, point them at a repo with no AGENTS.md, no test command an agent can find, and no CI that would catch a mistake — then conclude the agent is bad at coding. Usually the repo is the problem. `agentready` names which part, in the order worth fixing.
 
 ```bash
