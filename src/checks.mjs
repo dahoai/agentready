@@ -83,7 +83,11 @@ export const CHECKS = [
     weight: 3,
     run(ctx) {
       const files = instructionFiles(ctx);
-      if (!files.length) return fail("No instructions file to check.", "agentready init");
+      // A missing instructions file is already a failure on `agent-instructions`.
+      // Failing here too would charge a repo twice for one root cause, which
+      // both distorts the score and makes "N repos name no test command" read
+      // as N repos that have a file and left the command out of it.
+      if (!files.length) return na("Not applicable: no instructions file exists — see the check above.");
       if (isContentRepo(ctx)) return na(contentRepoNote(ctx));
 
       const named = files.filter((f) => TEST_HINT.test(ctx.read(f) ?? ""));

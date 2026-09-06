@@ -51,6 +51,13 @@ test("instructions-name-commands fails when no test command is named", () => {
   assert.equal(fenced.status, "pass");
 });
 
+test("instructions-name-commands does not charge a repo twice for a missing file", () => {
+  // agent-instructions already fails for this; double-counting one root cause
+  // distorted the score and the published statistics drawn from it.
+  const result = runCheck("instructions-name-commands", { ...CODE, "README.md": "# hi" });
+  assert.equal(result.status, "na");
+});
+
 test("instructions-name-commands reads every instruction file, not just the first", () => {
   // Regression: a repo whose AGENTS.md never says "test" while its CLAUDE.md
   // says it five times — only the first file was being read.
