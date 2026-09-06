@@ -120,6 +120,28 @@ test("a small codebase with a README is still judged as code", () => {
   assert.equal(runCheck("test-command", lib).status, "fail");
 });
 
+test("vendored agent skill docs do not reclassify a codebase as documentation", () => {
+  // Regression: a Next.js app that committed a skill library under .claude/
+  // and .agents/ had 442 markdown files against 100 source files. The ratio
+  // fired, every code-quality check went n/a, and the repo scored A/92 for
+  // having no verification loop at all. Agent-config markdown describes the
+  // repo; it is not the repo's content.
+  const repo = { "package.json": "{}", "README.md": "# app" };
+  for (let i = 0; i < 40; i++) repo[`.claude/skills/s${i}/SKILL.md`] = "# skill";
+  for (let i = 0; i < 5; i++) repo[`src/mod${i}.ts`] = "export const x = 1;";
+  for (const id of ["test-command", "ci-runs-tests", "typecheck", "linter"]) {
+    assert.notEqual(runCheck(id, repo).status, "na", `${id} must still apply to a real codebase`);
+  }
+});
+
+test("a genuine docs repo is still documentation once agent config is discounted", () => {
+  // The exclusion must not swallow the case it was carved out of: real prose
+  // under docs/ still outweighs a token amount of code.
+  const docs = { "src/build.js": "", ".claude/skills/a/SKILL.md": "# skill" };
+  for (let i = 0; i < 8; i++) docs[`docs/page${i}.md`] = "# page";
+  assert.equal(runCheck("test-command", docs).status, "na");
+});
+
 test("secret-hygiene fails on a tracked .env but not on .env.example", () => {
   const leaked = runCheck("secret-hygiene", { ".env": "TOKEN=abc", ".gitignore": ".env\n" });
   assert.equal(leaked.status, "fail");

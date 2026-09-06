@@ -31,8 +31,20 @@ function instructionFiles(ctx) {
 // codebase, while a repo with 2 source files and 319 markdown files is not.
 // Requiring markdown to both dominate and clear a floor keeps small real
 // codebases (which have a README and little else) on the code path.
+//
+// Markdown that configures agents — committed skills, rules, prompts, and the
+// instruction files themselves — describes the repo rather than being its
+// content, so it must not count toward the ratio. Counting it inverted this
+// tool's own purpose: a Next.js app that had vendored a skill library carried
+// 442 tracked markdown files, 380 of them under .claude/ and .agents/. That
+// tripped the ratio, skipped the build, test, lint, and type checks, and
+// graded it A/92 on the seven checks left standing. Running the same repo
+// with those directories removed scored it C/68, which was the truth. The
+// harder a team works at being agent-ready, the less we were checking them.
+const AGENT_CONFIG_MD = /^(\.claude|\.agents|\.cursor|\.codex|\.gemini|\.windsurf|\.github)\/|^(AGENTS|CLAUDE|GEMINI)\.md$/i;
+
 function markdownCount(ctx) {
-  return ctx.findAll(/\.mdx?$/i).length;
+  return ctx.findAll(/\.mdx?$/i).filter((f) => !AGENT_CONFIG_MD.test(f)).length;
 }
 
 function isContentRepo(ctx) {
