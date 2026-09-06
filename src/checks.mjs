@@ -41,10 +41,18 @@ function instructionFiles(ctx) {
 // graded it A/92 on the seven checks left standing. Running the same repo
 // with those directories removed scored it C/68, which was the truth. The
 // harder a team works at being agent-ready, the less we were checking them.
-const AGENT_CONFIG_MD = /^(\.claude|\.agents|\.cursor|\.codex|\.gemini|\.windsurf|\.github)\/|^(AGENTS|CLAUDE|GEMINI)\.md$/i;
+//
+// Matched at any depth, not just the root. A monorepo keeps this config beside
+// the package it configures, so packages/app/.claude/ is the common shape
+// rather than the exotic one, and anchoring to the root let the same
+// grade-inflating bug straight back in one directory down.
+const AGENT_CONFIG_MD = /(^|\/)(\.claude|\.agents|\.cursor|\.codex|\.gemini|\.windsurf|\.github)\//i;
+const AGENT_INSTRUCTION_MD = /(^|\/)(AGENTS|CLAUDE|GEMINI)\.md$/i;
 
 function markdownCount(ctx) {
-  return ctx.findAll(/\.mdx?$/i).filter((f) => !AGENT_CONFIG_MD.test(f)).length;
+  return ctx
+    .findAll(/\.mdx?$/i)
+    .filter((f) => !AGENT_CONFIG_MD.test(f) && !AGENT_INSTRUCTION_MD.test(f)).length;
 }
 
 function isContentRepo(ctx) {

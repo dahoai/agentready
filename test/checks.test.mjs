@@ -134,6 +134,26 @@ test("vendored agent skill docs do not reclassify a codebase as documentation", 
   }
 });
 
+test("vendored agent config is discounted at any depth, not just the root", () => {
+  // Regression on the fix above: the exclusion was anchored to the repo root,
+  // so a monorepo keeping the same skill library at packages/app/.claude/ still
+  // tripped the ratio and still had every code-quality check skipped. Same
+  // repo, same content, graded 12 points higher purely for the directory it
+  // sat in — and higher is the dangerous direction, since it hides failures.
+  const repo = { "package.json": "{}", "README.md": "# app" };
+  for (let i = 0; i < 40; i++) repo[`packages/app/.claude/skills/s${i}/SKILL.md`] = "# skill";
+  for (let i = 0; i < 5; i++) repo[`packages/app/src/mod${i}.ts`] = "export const x = 1;";
+  for (const id of ["test-command", "ci-runs-tests", "typecheck", "linter"]) {
+    assert.notEqual(runCheck(id, repo).status, "na", `${id} must still apply one directory down`);
+  }
+});
+
+test("a nested AGENTS.md is not counted as repository content either", () => {
+  const repo = { "package.json": "{}", "src/a.ts": "export const x = 1;" };
+  for (let i = 0; i < 6; i++) repo[`packages/p${i}/AGENTS.md`] = "# conventions";
+  assert.notEqual(runCheck("test-command", repo).status, "na");
+});
+
 test("a genuine docs repo is still documentation once agent config is discounted", () => {
   // The exclusion must not swallow the case it was carved out of: real prose
   // under docs/ still outweighs a token amount of code.
