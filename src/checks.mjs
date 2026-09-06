@@ -63,7 +63,7 @@ export const CHECKS = [
       if (!files.length) {
         return fail(
           "No AGENTS.md, CLAUDE.md, or equivalent. Every agent starts from zero and guesses your conventions.",
-          "agentready init",
+          "npx @dahoai/agentready init",
         );
       }
       const sized = files.map((f) => [f, (ctx.read(f) ?? "").trim().length]).sort((a, b) => b[1] - a[1]);

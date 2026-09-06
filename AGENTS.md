@@ -37,7 +37,7 @@ There is no lint or typecheck step, and that is deliberate — see Conventions.
 
 ## Conventions
 
-- **Zero runtime dependencies.** `npx agentready` must work in any CI job with no install step. A new dependency needs a written justification in the pull request; assume the answer is no.
+- **Zero runtime dependencies.** `npx @dahoai/agentready` must work in any CI job with no install step. A new dependency needs a written justification in the pull request; assume the answer is no.
 - **Node's own tooling only** — `node:test` for tests, no ESLint or TypeScript. The project is small enough that adding them would cost more than it catches. If it stops being small, revisit this line rather than working around it.
 - **A check earns its place by changing what a reviewer does.** If a team would read the finding and shrug, it does not belong in `CHECKS`.
 - **Findings state the consequence, not the rule.** "No lockfile" is a fact; "an agent's install can resolve different versions than yours" is why anyone should care. Write the second.

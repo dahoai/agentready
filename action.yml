@@ -1,6 +1,6 @@
 name: agentready
 description: Audit a repository for AI-coding-agent readiness and fail the build below a threshold.
-author: agentready
+author: dahoai
 
 inputs:
   path:

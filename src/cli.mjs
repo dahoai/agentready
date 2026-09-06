@@ -6,7 +6,7 @@
 //   agentready [path] --min-score 70    exit 1 below the threshold (for CI)
 //   agentready init [path]              scaffold AGENTS.md, CI, PR template
 //
-// Zero dependencies on purpose: `npx agentready` should work in any CI job
+// Zero dependencies on purpose: `npx @dahoai/agentready` should work in any CI job
 // without an install step or a lockfile change.
 
 import { writeFileSync, mkdirSync, existsSync } from "node:fs";

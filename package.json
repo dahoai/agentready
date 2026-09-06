@@ -1,12 +1,40 @@
 {
-  "name": "agentready",
+  "name": "@dahoai/agentready",
   "version": "0.1.0",
   "description": "Audit a repository for AI-coding-agent readiness, then fix what's missing.",
   "type": "module",
   "license": "MIT",
-  "bin": { "agentready": "src/cli.mjs" },
-  "files": ["src", "action.yml", "README.md"],
-  "engines": { "node": ">=20" },
+  "bin": {
+    "agentready": "src/cli.mjs"
+  },
+  "files": [
+    "src",
+    "action.yml",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dahoai/agentready.git"
+  },
+  "homepage": "https://github.com/dahoai/agentready#readme",
+  "bugs": {
+    "url": "https://github.com/dahoai/agentready/issues"
+  },
+  "keywords": [
+    "agents",
+    "agents.md",
+    "claude-code",
+    "cursor",
+    "ci",
+    "code-quality",
+    "developer-experience"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "test": "node --test"
   }

@@ -5,7 +5,7 @@ Audit a repository for AI-coding-agent readiness, then scaffold what is missing.
 Teams buy Claude Code and Cursor seats, point them at a repo with no AGENTS.md, no test command an agent can find, and no CI that would catch a mistake — then conclude the agent is bad at coding. Usually the repo is the problem. `agentready` names which part, in the order worth fixing.
 
 ```bash
-npx agentready .
+npx @dahoai/agentready .
 ```
 
 ```
@@ -24,10 +24,10 @@ npx agentready .
 ## Commands
 
 ```bash
-npx agentready [path]                  # audit and print a report
-npx agentready [path] --format json    # machine-readable (markdown | json | terminal)
-npx agentready [path] --min-score 70   # exit non-zero below the threshold
-npx agentready init [path]             # scaffold AGENTS.md, CI, and a PR template
+npx @dahoai/agentready [path]                  # audit and print a report
+npx @dahoai/agentready [path] --format json    # machine-readable (markdown | json | terminal)
+npx @dahoai/agentready [path] --min-score 70   # exit non-zero below the threshold
+npx @dahoai/agentready init [path]             # scaffold AGENTS.md, CI, and a PR template
 ```
 
 `init` writes explicit TODOs where it cannot detect an answer. It will not invent your conventions for you — an agent follows that file literally, so a marked gap is safer than a confident guess.
@@ -35,7 +35,7 @@ npx agentready init [path]             # scaffold AGENTS.md, CI, and a PR templa
 ## In CI
 
 ```yaml
-- uses: agentready/agentready@v0
+- uses: dahoai/agentready@v0
   with:
     min-score: 70
 ```
@@ -68,7 +68,7 @@ A waiver needs a written reason. Waived checks are shown in the report and exclu
 
 ## Design
 
-Zero runtime dependencies, so `npx agentready` works in any CI job with no install step and no lockfile change. Node 20+.
+Zero runtime dependencies, so `npx @dahoai/agentready` works in any CI job with no install step and no lockfile change. Node 20+.
 
 ## License
 
