@@ -1,0 +1,51 @@
+name: agentready
+description: Audit a repository for AI-coding-agent readiness and fail the build below a threshold.
+author: agentready
+
+inputs:
+  path:
+    description: Directory to audit.
+    required: false
+    default: "."
+  min-score:
+    description: Fail the job if the readiness score is below this value. Empty means never fail.
+    required: false
+    default: ""
+  summary:
+    description: Write the report to the GitHub Actions job summary.
+    required: false
+    default: "true"
+
+outputs:
+  score:
+    description: Readiness score out of 100.
+    value: ${{ steps.audit.outputs.score }}
+  grade:
+    description: Letter grade, A through F.
+    value: ${{ steps.audit.outputs.grade }}
+
+runs:
+  using: composite
+  steps:
+    - id: audit
+      shell: bash
+      run: |
+        set -euo pipefail
+        node "${{ github.action_path }}/src/cli.mjs" "${{ inputs.path }}" --format json --out agentready.json
+        score=$(node -e 'console.log(JSON.parse(require("fs").readFileSync("agentready.json","utf8")).score)')
+        grade=$(node -e 'console.log(JSON.parse(require("fs").readFileSync("agentready.json","utf8")).grade)')
+        echo "score=$score" >> "$GITHUB_OUTPUT"
+        echo "grade=$grade" >> "$GITHUB_OUTPUT"
+
+        if [ "${{ inputs.summary }}" = "true" ]; then
+          node "${{ github.action_path }}/src/cli.mjs" "${{ inputs.path }}" --format markdown >> "$GITHUB_STEP_SUMMARY"
+        fi
+
+        if [ -n "${{ inputs['min-score'] }}" ] && [ "$score" -lt "${{ inputs['min-score'] }}" ]; then
+          echo "::error::agentready score $score is below the required ${{ inputs['min-score'] }}"
+          exit 1
+        fi
+
+branding:
+  icon: check-circle
+  color: yellow

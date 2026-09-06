@@ -1,0 +1,19 @@
+name: verify
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm ci
+      - run: npm test
+      # Dogfood: the audit tool has to pass its own audit.
+      - run: node src/cli.mjs . --min-score 90 --format markdown >> "$GITHUB_STEP_SUMMARY"

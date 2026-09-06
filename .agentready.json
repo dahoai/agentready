@@ -1,0 +1,8 @@
+{
+  "waive": {
+    "linter": "Zero-dependency by design; ESLint would be the only dependency in the repo and node:test already catches what matters at this size.",
+    "typecheck": "Same reason. Revisit if src/ outgrows a few hundred lines per file.",
+    "formatter": "Same reason. House style is enforced in review, not by a tool.",
+    "codeowners": "Single-maintainer repo; a CODEOWNERS file would name one person and change nothing."
+  }
+}
